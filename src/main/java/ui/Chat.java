@@ -12,18 +12,37 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javafx.application.Platform;
 
+/**
+ * Clase Chat que maneja el envío y recepción de mensajes cifrados
+ * entre dos usuarios utilizando una conexión segura.
+ */
 public class Chat {
 
+    // Instancia singleton de Chat
     private static Chat instance;
+
+    // Longitud del IV (vector de inicialización) para GCM
     private static final int GCM_IV_LENGTH = 12;
+
+    // Longitud del tag de autenticación para GCM
     private static final int GCM_TAG_LENGTH = 16;
+
+    // Executor para manejar tareas concurrentes
     private static final ExecutorService executor = Executors.newFixedThreadPool(3);
 
+    // Nombre del usuario local
     private String nombreUser;
+
+    // Nombre del usuario remoto
     private String nombreRemoto;
 
+    // Constructor privado para el patrón singleton
     private Chat() {}
 
+    /**
+     * Obtiene la instancia singleton de Chat.
+     * @return la instancia de Chat
+     */
     public static Chat getInstance() {
         if (instance == null) {
             instance = new Chat();
@@ -31,6 +50,11 @@ public class Chat {
         return instance;
     }
 
+    /**
+     * Envía un mensaje cifrado al otro usuario.
+     * @param mensaje el texto del mensaje a enviar
+     * @throws Exception si ocurre un error durante el cifrado o envío
+     */
     public void enviarMensaje(String mensaje) throws Exception {
         Conexion conexion = Conexion.getInstance();
         byte[] mensajeCifrado = encriptarMensaje(mensaje);
@@ -40,6 +64,10 @@ public class Chat {
         dos.flush();
     }
 
+    /**
+     * Recibe mensajes de forma asíncrona y los pasa al consumidor recibido.
+     * @param onMessageReceived función que se ejecuta al recibir un mensaje
+     */
     public void recibirMensaje(Consumer<String> onMessageReceived) {
         Conexion conexion = Conexion.getInstance();
         executor.submit(() -> {
@@ -58,6 +86,11 @@ public class Chat {
         });
     }
 
+    /**
+     * Envía el nombre del usuario cifrado.
+     * @param nombre el nombre del usuario
+     * @throws Exception si ocurre un error durante el cifrado o envío
+     */
     public void enviarNombreUsuario(String nombre) throws Exception {
         Conexion conexion = Conexion.getInstance();
         byte[] nombreCifrado = encriptarMensaje(nombre);
@@ -67,6 +100,10 @@ public class Chat {
         dos.flush();
     }
 
+    /**
+     * Recibe el nombre de usuario cifrado y lo pasa al consumidor recibido.
+     * @param onNombreReceived función que se ejecuta al recibir el nombre
+     */
     public void recibirNombreUsuario(Consumer<String> onNombreReceived) {
         Conexion conexion = Conexion.getInstance();
         executor.submit(() -> {
@@ -83,6 +120,12 @@ public class Chat {
         });
     }
 
+    /**
+     * Cifra un mensaje utilizando AES en modo GCM.
+     * @param mensaje el mensaje a cifrar
+     * @return el mensaje cifrado con IV prepended
+     * @throws Exception si ocurre un error en el proceso de cifrado
+     */
     public byte[] encriptarMensaje(String mensaje) throws Exception {
         SecretKeySpec keySpec = new SecretKeySpec(Conexion.getInstance().getClaveCompartida(), "AES");
         byte[] iv = new byte[GCM_IV_LENGTH];
@@ -98,6 +141,12 @@ public class Chat {
         return mensajeCifrado;
     }
 
+    /**
+     * Descifra un mensaje recibido utilizando AES en modo GCM.
+     * @param mensajeCifrado el mensaje cifrado con el IV al inicio
+     * @return el mensaje descifrado en texto plano
+     * @throws Exception si ocurre un error en el proceso de descifrado
+     */
     public String desencriptarMensaje(byte[] mensajeCifrado) throws Exception {
         byte[] iv = new byte[GCM_IV_LENGTH];
         byte[] textoCifrado = new byte[mensajeCifrado.length - GCM_IV_LENGTH];
@@ -111,18 +160,34 @@ public class Chat {
         return new String(textoPlano, "UTF-8");
     }
 
+    /**
+     * Obtiene el nombre del usuario local.
+     * @return el nombre del usuario
+     */
     public String getNombreUser() {
         return nombreUser;
     }
 
+    /**
+     * Establece el nombre del usuario local.
+     * @param nombreUser el nuevo nombre del usuario
+     */
     public void setNombreUser(String nombreUser) {
         this.nombreUser = nombreUser;
     }
 
+    /**
+     * Obtiene el nombre del usuario remoto.
+     * @return el nombre del usuario remoto
+     */
     public String getNombreRemoto() {
         return nombreRemoto;
     }
 
+    /**
+     * Establece el nombre del usuario remoto.
+     * @param nombreRemoto el nuevo nombre del usuario remoto
+     */
     public void setNombreRemoto(String nombreRemoto) {
         this.nombreRemoto = nombreRemoto;
     }
